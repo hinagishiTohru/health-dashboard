@@ -769,6 +769,9 @@ function syncData() {
       if (score(r) >= score(existing)) dedup[r.date] = r;
     });
     DATA = Object.values(dedup).sort(function(a,b){return a.date<b.date?-1:1;});
+    // デバッグ: 全日付を確認
+    console.log('全日付:', DATA.map(function(r){return r.date;}).join(', '));
+    console.log('rawData件数:', rawData.length, '重複除去後:', DATA.length);
     hideLoad();
     btn.classList.remove('loading');
     btn.textContent = '🔄 同期';
