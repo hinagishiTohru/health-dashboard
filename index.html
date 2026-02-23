@@ -471,7 +471,7 @@ tr:hover td{background:var(--sf2)}
     <div class="fg">
       <div class="fl">
         <label>日付</label>
-        <input type="date" id="f_date" onchange="loadExisting()">
+        <input type="date" id="f_date" onchange="clearFormOnDateChange()">
         <button class="load-btn" onclick="loadExisting()">📂 この日のデータを読み込む</button>
       </div>
       <div class="fl"><label>計測時刻</label><input type="text" inputmode="numeric" id="f_measure_time" placeholder=""></div>
@@ -1492,6 +1492,17 @@ function initForm(){
   var ds=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
   var el=document.getElementById('f_date');
   if(el&&!el.value) el.value=ds; // 日付が未設定の時だけセット
+}
+
+function clearFormOnDateChange(){
+  // 日付を変えたら入力欄をクリア（誤入力防止）
+  var inputs = document.querySelectorAll('#sec-input input[type="text"], #sec-input input[type="number"], #sec-input textarea');
+  inputs.forEach(function(el){ el.value = ''; });
+  var cbs = document.querySelectorAll('#sec-input input[type="checkbox"]');
+  cbs.forEach(function(el){ el.checked = false; });
+  var sels = document.querySelectorAll('#sec-input select');
+  sels.forEach(function(el){ el.selectedIndex = 0; });
+  showMsg('日付を変更しました。既存データを読み込む場合はボタンを押してください。', 'ok');
 }
 
 function loadExisting(){
