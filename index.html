@@ -278,8 +278,49 @@ tr:hover td{background:var(--sf2)}
 
 <div class="main">
 
+<!-- 今日のダッシュボード -->
+<div class="sec on" id="sec-today">
+
+  <!-- 体重-0.1kgプラン -->
+  <div class="form-card" id="weightPlanCard">
+    <h4>🎯 今日の目標：体重 -0.1kg プラン</h4>
+    <div id="weightPlanBody"><span style="font-size:13px;color:var(--tx2)">同期後に表示されます</span></div>
+  </div>
+
+  <!-- 週次ミッション -->
+  <div class="form-card">
+    <h4>📋 週次ミッション（相関分析から自動生成）</h4>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">今週（月〜日）の実施状況と推奨回数</div>
+    <div id="weeklyMission"><span style="font-size:13px;color:var(--tx2)">同期後に表示されます</span></div>
+    <div style="margin-top:12px">
+      <div class="aic" style="margin-bottom:0;border-top-color:var(--a5)">
+        <div class="aih">
+          <div class="ai-title">🤖 今週のAIコーチング<small>相関×今週実績から具体的アドバイス</small></div>
+          <div class="ai-btns">
+            <button class="ab sub" onclick="openModal()">🔑 APIキー</button>
+            <button class="ab" onclick="runWeeklyAI()" id="weeklyAIBtn">✨ 生成</button>
+          </div>
+        </div>
+        <div class="aib" id="weeklyAIBody"><span class="aip">「✨ 生成」を押してください。</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 今日のチェックリスト -->
+  <div class="form-card">
+    <h4>✅ 今日のチェックリスト</h4>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">今日の記録状況（最新データ）</div>
+    <div id="todayChecklist"></div>
+    <div style="margin-top:12px;background:var(--sf2);border-radius:8px;padding:10px 14px">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">今週の達成率</div>
+      <div id="weeklyProgress"></div>
+    </div>
+  </div>
+
+</div>
+
 <!-- 概要 -->
-<div class="sec on" id="sec-overview">
+<div class="sec" id="sec-overview">
   <div class="aic">
     <div class="aih">
       <div class="ai-title">🤖 AIコメント（Groq・無料）<small>日記・運動・血圧をもとに分析</small></div>
@@ -595,6 +636,7 @@ tr:hover td{background:var(--sf2)}
         <label>Y軸（体組成）</label>
         <select id="corrY" onchange="renderCorr()">
           <option value="weight">体重(kg)</option>
+          <option value="next_weight_diff">翌日体重変化(kg)</option>
           <option value="body_fat_pct">体脂肪率(%)</option>
           <option value="muscle_kg">筋肉量(kg)</option>
           <option value="visceral_fat">内臓脂肪</option>
@@ -612,7 +654,11 @@ tr:hover td{background:var(--sf2)}
 <!-- Bottom Nav -->
 <nav class="bnav">
   <div class="bnav-row">
-    <div class="bn on" onclick="switchTab('overview',this)" id="bn-overview">
+    <div class="bn on" onclick="switchTab('today',this)" id="bn-today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      今日
+    </div>
+    <div class="bn" onclick="switchTab('overview',this)" id="bn-overview">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       概要
     </div>
@@ -628,12 +674,12 @@ tr:hover td{background:var(--sf2)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v6m12-6v6M3 10h18M6 20v-4m12 4v-4M3 16h18"/></svg>
       運動
     </div>
+  </div>
+  <div class="bnav-row">
     <div class="bn" onclick="switchTab('calendar',this)" id="bn-calendar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       暦
     </div>
-  </div>
-  <div class="bnav-row">
     <div class="bn" onclick="switchTab('input',this)" id="bn-input">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       入力
@@ -650,7 +696,6 @@ tr:hover td{background:var(--sf2)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="18" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="18" cy="14" r="2"/><circle cx="9" cy="6" r="2"/><path d="M6 16l3-8m3 6l6-2"/></svg>
       相関
     </div>
-    <div class="bn" onclick="switchTab('corr',this)" id="bn-corr2" style="display:none"></div>
   </div>
 </nav>
 
@@ -682,7 +727,7 @@ const MIGRATE_DATA = [{"date":"2025-10-22","weekday":"(\u6c34)","measure_time":"
 
 var DATA = [];
 var days = 30;
-var tab = 'overview';
+var tab = 'today';
 var calY = new Date().getFullYear();
 var calM = new Date().getMonth();
 var sortK = 'date';
@@ -739,6 +784,7 @@ function syncData() {
     }
     renderTab(tab);
     renderTable(); // 一覧タブのデータを常に更新
+    renderToday();  // 今日タブも更新
   })
   .catch(function(e) {
     hideLoad();
@@ -896,7 +942,8 @@ function sh(items){
 // ===== RENDERS =====
 function renderTab(name){
   if(DATA.length===0&&name!=='input'&&name!=='table')return;
-  if(name==='overview')renderOverview();
+  if(name==='today')renderToday();
+  else if(name==='overview')renderOverview();
   else if(name==='body')renderBody();
   else if(name==='blood')renderBlood();
   else if(name==='exercise')renderExercise();
@@ -926,6 +973,14 @@ function calcCorr(xArr, yArr) {
 
 function getExVal(r, key) {
   if (key === 'train_total') return (r.train_arm_min||0)+(r.train_chest_min||0)+(r.train_back_min||0)+(r.train_abs_min||0)+(r.train_leg_min||0)||null;
+  if (key === 'next_weight_diff') {
+    // 翌日の体重変化を計算
+    var idx = DATA.indexOf(r);
+    if (idx < 0 || idx >= DATA.length-1) return null;
+    var next = DATA[idx+1];
+    if (r.weight == null || next.weight == null) return null;
+    return Math.round((next.weight - r.weight)*10)/10;
+  }
   return r[key];
 }
 
@@ -1038,7 +1093,7 @@ function renderCorr(){
   var xKey=document.getElementById('corrX').value;
   var yKey=document.getElementById('corrY').value;
   var xLabels={steps:'歩数',jogging_min:'JOG分',stretch_total_min:'ストレッチ分',stretch_back_min:'ストレッチ背中分',squat_count:'SQ回',plank_sec:'PL秒',train_total:'筋トレ合計分',train_abs_min:'腹筋分',train_leg_min:'脚トレ分'};
-  var yLabels={weight:'体重',body_fat_pct:'体脂肪率',muscle_kg:'筋肉量',bp_high:'最高血圧',visceral_fat:'内臓脂肪',bmi:'BMI'};
+  var yLabels={weight:'体重',next_weight_diff:'翌日体重変化',body_fat_pct:'体脂肪率',muscle_kg:'筋肉量',bp_high:'最高血圧',visceral_fat:'内臓脂肪',bmi:'BMI'};
   var xLabel=xLabels[xKey]||xKey;
   var yLabel=yLabels[yKey]||yKey;
 
@@ -1631,6 +1686,294 @@ function runDayAI(){
 (function(){
   syncData();
 })();
+
+// ===== 今日タブ =====
+function renderToday() {
+  if (!DATA.length) return;
+  renderWeightPlan();
+  renderWeeklyMission();
+  renderTodayChecklist();
+}
+
+// 体重-0.1kgプラン
+function renderWeightPlan() {
+  var la = DATA[DATA.length - 1];
+  var target = la.weight ? Math.round((la.weight - 0.1) * 10) / 10 : null;
+  // 7日平均体重
+  var w7 = DATA.slice(-7).filter(function(r){return r.weight;}).map(function(r){return r.weight;});
+  var avgW7 = w7.length ? w7.reduce(function(a,b){return a+b;},0)/w7.length : null;
+
+  // 相関から効果的な運動を特定
+  var exercises = [
+    {key:'steps',label:'歩数',unit:'歩',tip:'1万歩目安'},
+    {key:'jogging_min',label:'ジョギング',unit:'分',tip:'20分以上が効果的'},
+    {key:'train_total',label:'筋トレ合計',unit:'分',tip:'30分以上推奨'},
+    {key:'stretch_total_min',label:'ストレッチ',unit:'分',tip:'10分以上'},
+    {key:'squat_count',label:'スクワット',unit:'回',tip:'30回以上'},
+    {key:'plank_sec',label:'プランク',unit:'秒',tip:'60秒以上'},
+  ];
+
+  // 体重との相関（負の相関が強いほど効果的）
+  var scored = exercises.map(function(ex) {
+    var xArr = DATA.map(function(r){ return getExVal(r, ex.key); });
+    var yArr = DATA.map(function(r){ return r.weight; });
+    var c = calcCorr(xArr, yArr);
+    return Object.assign({}, ex, {r: c.r || 0, n: c.pts.length});
+  }).filter(function(e){ return e.n >= 5; });
+  scored.sort(function(a,b){ return a.r - b.r; }); // 負の相関が強い順
+
+  var topEx = scored.slice(0, 3); // 最も効果的な3つ
+
+  // 消費カロリー概算（体重×METs×時間）
+  var bw = la.weight || 72;
+  // 0.1kg落とすには約700kcal消費が必要（脂肪1g=7kcal）
+  // 1日70kcal余分に消費すれば10日で-0.1kg
+  var kcalNeeded = 70;
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">';
+  html += '<div style="background:var(--sf2);border-radius:8px;padding:12px;border-left:3px solid var(--a)">';
+  html += '<div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:4px">現在の体重</div>';
+  html += '<div style="font-size:22px;font-weight:700;color:#fff">' + (la.weight||'—') + '<span style="font-size:12px;color:var(--tx2)">kg</span></div>';
+  html += '<div style="font-size:11px;color:var(--tx2);margin-top:2px">7日平均: ' + (avgW7?avgW7.toFixed(1):'—') + 'kg</div></div>';
+  html += '<div style="background:var(--sf2);border-radius:8px;padding:12px;border-left:3px solid var(--good)">';
+  html += '<div style="font-size:10px;color:var(--good);font-weight:700;margin-bottom:4px">今日の目標</div>';
+  html += '<div style="font-size:22px;font-weight:700;color:var(--good)">' + (target||'—') + '<span style="font-size:12px;color:var(--tx2)">kg</span></div>';
+  html += '<div style="font-size:11px;color:var(--tx2);margin-top:2px">+70kcal消費で達成</div></div>';
+  html += '</div>';
+
+  html += '<div style="font-size:12px;font-weight:700;color:var(--a);margin-bottom:8px;letter-spacing:.3px">📊 あなたのデータから効果が高い運動TOP3</div>';
+  topEx.forEach(function(ex, i) {
+    var eff = Math.abs(ex.r);
+    var col = eff>=0.4?'var(--good)':(eff>=0.2?'var(--warn)':'var(--tx2)');
+    var bar = Math.round(eff * 100);
+    html += '<div style="background:var(--sf2);border-radius:8px;padding:10px 12px;margin-bottom:8px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+    html += '<span style="font-size:13px;font-weight:700">' + (i+1) + '. ' + ex.label + '</span>';
+    html += '<span style="font-size:11px;color:'+col+'">効果度 ' + Math.round(eff*100) + '%</span></div>';
+    html += '<div style="background:var(--bg);border-radius:4px;height:5px;margin-bottom:6px">';
+    html += '<div style="background:'+col+';width:'+bar+'%;height:100%;border-radius:4px;transition:width .5s"></div></div>';
+    html += '<div style="font-size:11px;color:var(--tx2)">💡 ' + ex.tip + '</div></div>';
+  });
+
+  document.getElementById('weightPlanBody').innerHTML = html;
+}
+
+// 週次ミッション
+function renderWeeklyMission() {
+  if (!DATA.length) return;
+
+  // 今週の月曜日を計算
+  var today = new Date();
+  var dow = today.getDay();
+  var monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  var mondayStr = monday.toISOString().slice(0,10);
+
+  // 今週のデータ
+  var weekData = DATA.filter(function(r){ return r.date >= mondayStr; });
+
+  // 相関から推奨運動リストを生成
+  var missions = [
+    {key:'jogging_min', label:'ジョギング', unit:'分/回', weekGoal:3, minVal:20,
+     check:function(r){return (r.jogging_min||0)>=20;}, icon:'🏃'},
+    {key:'train_total', label:'筋トレ（全体）', unit:'回/週', weekGoal:3, minVal:20,
+     check:function(r){var t=(r.train_arm_min||0)+(r.train_chest_min||0)+(r.train_back_min||0)+(r.train_abs_min||0)+(r.train_leg_min||0);return t>=20;}, icon:'💪'},
+    {key:'stretch_total_min', label:'ストレッチ', unit:'分/日', weekGoal:5, minVal:10,
+     check:function(r){return (r.stretch_total_min||0)>=10;}, icon:'🧘'},
+    {key:'squat_count', label:'スクワット', unit:'回/日', weekGoal:4, minVal:30,
+     check:function(r){return (r.squat_count||0)>=30;}, icon:'🦵'},
+    {key:'plank_sec', label:'プランク', unit:'秒/日', weekGoal:4, minVal:60,
+     check:function(r){return (r.plank_sec||0)>=60;}, icon:'⚡'},
+    {key:'steps', label:'歩数', unit:'歩/日', weekGoal:6, minVal:8000,
+     check:function(r){return (r.steps||0)>=8000;}, icon:'👟'},
+  ];
+
+  // 各ミッションに相関スコアを付与
+  missions.forEach(function(m) {
+    var xArr = DATA.map(function(r){ return getExVal(r, m.key); });
+    var yArr = DATA.map(function(r){ return r.weight; });
+    var c = calcCorr(xArr, yArr);
+    m.corrWeight = c.r || 0;
+
+    var yArr2 = DATA.map(function(r){ return r.body_fat_pct; });
+    var c2 = calcCorr(xArr, yArr2);
+    m.corrFat = c2.r || 0;
+
+    // 今週の達成日数
+    m.doneDays = weekData.filter(function(r){ return m.check(r); }).length;
+    m.weekDays = weekData.length;
+    m.rate = m.weekGoal > 0 ? Math.min(1, m.doneDays / m.weekGoal) : 0;
+    m.remaining = Math.max(0, m.weekGoal - m.doneDays);
+  });
+
+  // 効果の高い順にソート
+  missions.sort(function(a,b){ return (a.corrWeight+a.corrFat) - (b.corrWeight+b.corrFat); });
+
+  var html = '';
+  missions.forEach(function(m) {
+    var pct = Math.round(m.rate * 100);
+    var col = pct >= 100 ? 'var(--good)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)';
+    var effW = Math.abs(m.corrWeight);
+    var effF = Math.abs(m.corrFat);
+    var priority = (effW >= 0.3 || effF >= 0.3) ? '🔴必須' : (effW >= 0.15 || effF >= 0.15) ? '🟡推奨' : '🟢任意';
+
+    html += '<div style="background:var(--sf2);border-radius:10px;padding:12px 14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+    html += '<span style="font-size:18px">' + m.icon + '</span>';
+    html += '<div style="flex:1"><div style="font-size:13px;font-weight:700">' + m.label + '</div>';
+    html += '<div style="font-size:10px;color:var(--tx2)">週' + m.weekGoal + '回以上 / 1回' + m.minVal + m.unit.split('/')[0] + '以上</div></div>';
+    html += '<span style="font-size:11px;font-weight:700">' + priority + '</span></div>';
+    // 進捗バー
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<div style="flex:1;background:var(--bg);border-radius:4px;height:8px">';
+    html += '<div style="background:'+col+';width:'+pct+'%;height:100%;border-radius:4px;transition:width .5s"></div></div>';
+    html += '<span style="font-size:12px;color:'+col+';font-weight:700;min-width:60px;text-align:right">';
+    html += m.doneDays + '/' + m.weekGoal + '回';
+    if (m.remaining > 0) html += ' (あと' + m.remaining + '回)';
+    html += '</span></div>';
+    // 体重・体脂肪への効果
+    html += '<div style="display:flex;gap:8px;margin-top:6px">';
+    html += '<span style="font-size:10px;color:var(--tx2)">体重効果: <span style="color:'+(effW>=0.3?'var(--good)':'var(--tx2)')+'">'+Math.round(effW*100)+'%</span></span>';
+    html += '<span style="font-size:10px;color:var(--tx2)">体脂肪効果: <span style="color:'+(effF>=0.3?'var(--good)':'var(--tx2)')+'">'+Math.round(effF*100)+'%</span></span>';
+    html += '</div></div>';
+  });
+
+  document.getElementById('weeklyMission').innerHTML = html;
+}
+
+// 今日のチェックリスト
+function renderTodayChecklist() {
+  var la = DATA[DATA.length - 1];
+  if (!la) return;
+
+  var checks = [
+    {label:'体重測定', done: la.weight != null, icon:'⚖️'},
+    {label:'血圧測定', done: la.bp_high != null, icon:'❤️'},
+    {label:'歩数記録', done: la.steps != null, icon:'👟'},
+    {label:'ジョギング', done: (la.jogging_min||0) >= 20, icon:'🏃', val: la.jogging_min ? Math.round(la.jogging_min)+'分' : '未実施'},
+    {label:'スクワット30回+', done: (la.squat_count||0) >= 30, icon:'🦵', val: la.squat_count ? Math.round(la.squat_count)+'回' : '未実施'},
+    {label:'プランク60秒+', done: (la.plank_sec||0) >= 60, icon:'⚡', val: la.plank_sec ? Math.round(la.plank_sec)+'秒' : '未実施'},
+    {label:'筋トレ', done: (la.train_arm_min||0)+(la.train_chest_min||0)+(la.train_back_min||0)+(la.train_abs_min||0)+(la.train_leg_min||0) > 0, icon:'💪'},
+    {label:'ストレッチ10分+', done: (la.stretch_total_min||0) >= 10, icon:'🧘', val: la.stretch_total_min ? la.stretch_total_min+'分' : '未実施'},
+    {label:'8000歩+', done: (la.steps||0) >= 8000, icon:'🚶', val: la.steps ? Math.round(la.steps).toLocaleString()+'歩' : '未記録'},
+    {label:'頭皮マッサージ', done: (la.head_massage||0) > 0, icon:'💆'},
+    {label:'入浴', done: la.bath === '○', icon:'🛁'},
+    {label:'日記', done: !!(la.diary), icon:'📝'},
+  ];
+
+  var doneCount = checks.filter(function(c){return c.done;}).length;
+  var pct = Math.round(doneCount / checks.length * 100);
+  var col = pct >= 80 ? 'var(--good)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)';
+
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+  html += '<div style="font-size:13px;color:var(--tx2)">最新日: <strong style="color:var(--tx)">' + la.date + '</strong></div>';
+  html += '<div style="margin-left:auto;font-size:14px;font-weight:700;color:'+col+'">' + doneCount + '/' + checks.length + '</div></div>';
+
+  // 達成率バー
+  html += '<div style="background:var(--bg);border-radius:6px;height:10px;margin-bottom:14px">';
+  html += '<div style="background:'+col+';width:'+pct+'%;height:100%;border-radius:6px;transition:width .5s"></div></div>';
+
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">';
+  checks.forEach(function(c) {
+    html += '<div style="display:flex;align-items:center;gap:8px;background:var(--sf2);border-radius:8px;padding:8px 10px;border-left:3px solid '+(c.done?'var(--good)':'var(--bd)')+'">';
+    html += '<span style="font-size:16px">' + c.icon + '</span>';
+    html += '<div><div style="font-size:12px;font-weight:700;color:'+(c.done?'var(--tx)':'var(--tx2)')+'">'+c.label+'</div>';
+    if (c.val) html += '<div style="font-size:10px;color:var(--tx2)">'+c.val+'</div>';
+    html += '</div>';
+    html += '<span style="margin-left:auto;font-size:16px">'+(c.done?'✅':'⬜')+'</span></div>';
+  });
+  html += '</div>';
+
+  document.getElementById('todayChecklist').innerHTML = html;
+
+  // 週次達成率
+  var today2 = new Date();
+  var dow = today2.getDay();
+  var monday = new Date(today2);
+  monday.setDate(today2.getDate() - (dow === 0 ? 6 : dow - 1));
+  var mondayStr = monday.toISOString().slice(0,10);
+  var weekData = DATA.filter(function(r){ return r.date >= mondayStr; });
+
+  var wItems = [
+    {label:'記録日数', val: weekData.length + '/7日', pct: weekData.length/7*100},
+    {label:'JOG達成', val: weekData.filter(function(r){return (r.jogging_min||0)>=20;}).length + '日', pct: weekData.filter(function(r){return (r.jogging_min||0)>=20;}).length/3*100},
+    {label:'筋トレ達成', val: weekData.filter(function(r){return (r.train_arm_min||0)+(r.train_chest_min||0)+(r.train_back_min||0)+(r.train_abs_min||0)+(r.train_leg_min||0)>=20;}).length + '日', pct: weekData.filter(function(r){return (r.train_arm_min||0)+(r.train_chest_min||0)+(r.train_back_min||0)+(r.train_abs_min||0)+(r.train_leg_min||0)>=20;}).length/3*100},
+    {label:'ストレッチ達成', val: weekData.filter(function(r){return (r.stretch_total_min||0)>=10;}).length + '日', pct: weekData.filter(function(r){return (r.stretch_total_min||0)>=10;}).length/5*100},
+    {label:'8000歩達成', val: weekData.filter(function(r){return (r.steps||0)>=8000;}).length + '日', pct: weekData.filter(function(r){return (r.steps||0)>=8000;}).length/6*100},
+  ];
+
+  var wpHtml = '';
+  wItems.forEach(function(wi) {
+    var p = Math.min(100, Math.round(wi.pct));
+    var c = p>=100?'var(--good)':p>=50?'var(--warn)':'var(--bad)';
+    wpHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+    wpHtml += '<span style="font-size:11px;color:var(--tx2);min-width:80px">'+wi.label+'</span>';
+    wpHtml += '<div style="flex:1;background:var(--bg);border-radius:4px;height:6px">';
+    wpHtml += '<div style="background:'+c+';width:'+p+'%;height:100%;border-radius:4px"></div></div>';
+    wpHtml += '<span style="font-size:11px;color:'+c+';min-width:35px;text-align:right">'+wi.val+'</span></div>';
+  });
+  document.getElementById('weeklyProgress').innerHTML = wpHtml;
+}
+
+// 週次AIコーチング
+function runWeeklyAI() {
+  if (!DATA.length) return;
+  if (!gKey) { openModal(); return; }
+  var btn = document.getElementById('weeklyAIBtn');
+  btn.disabled = true;
+  ldAI('weeklyAIBody');
+
+  // 今週データ
+  var today = new Date();
+  var dow = today.getDay();
+  var monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  var mondayStr = monday.toISOString().slice(0,10);
+  var weekData = DATA.filter(function(r){ return r.date >= mondayStr; });
+  var la = DATA[DATA.length-1];
+  var first = DATA[0];
+
+  // 相関スコア
+  var exercises = [
+    {key:'jogging_min',label:'JOG'},{key:'train_total',label:'筋トレ'},
+    {key:'stretch_total_min',label:'ストレッチ'},{key:'squat_count',label:'SQ'},
+    {key:'plank_sec',label:'PL'},{key:'steps',label:'歩数'},
+  ];
+  var corrLines = [];
+  exercises.forEach(function(ex) {
+    var c = calcCorr(DATA.map(function(r){return getExVal(r,ex.key);}), DATA.map(function(r){return r.weight;}));
+    if (c.r !== null) corrLines.push(ex.label+': 体重r='+c.r.toFixed(2));
+  });
+
+  var lines = [
+    '【今週の実績（'+mondayStr+'〜）】',
+    'データ日数: '+weekData.length+'日',
+    'JOG実施: '+weekData.filter(function(r){return (r.jogging_min||0)>=20;}).length+'日（目標3日）',
+    '筋トレ実施: '+weekData.filter(function(r){return (r.train_arm_min||0)+(r.train_chest_min||0)+(r.train_back_min||0)+(r.train_abs_min||0)+(r.train_leg_min||0)>=20;}).length+'日（目標3日）',
+    'ストレッチ実施: '+weekData.filter(function(r){return (r.stretch_total_min||0)>=10;}).length+'日（目標5日）',
+    'スクワット30回+: '+weekData.filter(function(r){return (r.squat_count||0)>=30;}).length+'日（目標4日）',
+    '8000歩達成: '+weekData.filter(function(r){return (r.steps||0)>=8000;}).length+'日（目標6日）',
+    '',
+    '【現在の体組成】',
+    '体重: '+la.weight+'kg（開始時'+first.weight+'kg、差'+(la.weight-first.weight>0?'+':'')+((la.weight-first.weight).toFixed(1))+'kg）',
+    '体脂肪率: '+la.body_fat_pct+'%　筋肉量: '+la.muscle_kg+'kg　内臓脂肪: '+la.visceral_fat,
+    '最高血圧: '+la.bp_high+'mmHg',
+    '',
+    '【運動×体重の相関係数（'+DATA.length+'日分）】',
+    corrLines.join('、'),
+    '',
+    '目標は体重-0.1kg/日（週-0.7kg）です。',
+    '①今週の実績評価、②今週残りでやるべき具体的な運動メニュー、③来週の重点課題を提案してください。相関係数の根拠も示してください。400〜500文字で。'
+  ];
+
+  callAI(lines.join('\n'), function(e, t) {
+    if (e) erAI('weeklyAIBody', e.message);
+    else okAI('weeklyAIBody', t);
+    btn.disabled = false;
+  });
+}
+
+
 </script>
 </body>
 </html>
